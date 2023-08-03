@@ -1,16 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const usersRouter = require("../routes/users");
-const recipesRouter = require("../routes/recipes");
-const categorysRouter = require("../routes/categorys");
-const commentsRouter = require("../routes/comments");
-const likedsRouter = require("../routes/likeds");
-const bookamrksRouter = require("../routes/bookmarks");
+const workerRouter = require("../routes/worker");
+const recruiterRouter = require("../routes/recruiter");
+const experienceRouter = require("../routes/experience");
+const portofolioRouter = require("../routes/portofolio");
+const skillRouter = require("../routes/skill");
 
-router.use("/users", usersRouter);
-router.use("/categorys", categorysRouter);
-router.use("/recipes", recipesRouter);
-router.use("/comments", commentsRouter);
-router.use("/likeds", likedsRouter);
-router.use("/bookmarks", bookamrksRouter);
+router.use("/worker", workerRouter);
+router.use("/recruiter", recruiterRouter);
+router.use("/experience", experienceRouter);
+router.use("/portofolio", portofolioRouter);
+router.use("/skill", skillRouter);
 module.exports = router;
