@@ -28,7 +28,7 @@ const multerUpload = multer({
 });
 
 // middleware
-const uploadUsers = (req, res, next) => {
+const uploadWorker = (req, res, next) => {
   const multerSingle = multerUpload.single("wrk_photo");
   multerSingle(req, res, (err) => {
     if (err) {
@@ -44,4 +44,4 @@ const uploadUsers = (req, res, next) => {
   });
 };
 
-module.exports = uploadUsers;
+module.exports = uploadWorker;

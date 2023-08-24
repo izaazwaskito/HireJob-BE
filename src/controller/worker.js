@@ -122,23 +122,6 @@ let workerController = {
       if (!rowCount) {
         res.json({ message: "ID Not Found" });
       }
-      // const schema = Joi.object().keys({
-      //   wrk_name: Joi.string().required(),
-      //   wrk_phone: Joi.string().min(10).max(12),
-      //   wrk_email: Joi.any(),
-      // });
-      // const { error, value } = schema.validate(req.body, {
-      //   abortEarly: false,
-      // });
-      // if (error) {
-      //   console.log(error);
-      //   return res.send(error.details);
-      // }
-      // let users_photo = null;
-      // if (req.file) {
-      //   const result = await cloudinary.uploader.upload(req.file.path);
-      //   users_photo = result.secure_url;
-      // }
       const data = {
         wrk_id,
         wrk_jobdesk,

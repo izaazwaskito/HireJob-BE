@@ -10,7 +10,7 @@ CREATE TABLE worker
     wrk_jobdesk VARCHAR(255),
     wrk_dom VARCHAR(255),
     wrk_place VARCHAR(255),
-    wrk_desc VARCHAR(255),
+    wrk_desc TEXT,
     wrk_photo VARCHAR(255)
 );
 
@@ -24,7 +24,7 @@ CREATE TABLE recruiter
     rec_jobfield VARCHAR(255),
     rec_province VARCHAR(255),
     rec_city VARCHAR(255),
-    rec_desc VARCHAR(255),
+    rec_desc TEXT,
     rec_emailcomp VARCHAR(255),
     rec_phone VARCHAR(255),
     rec_linkedin VARCHAR(255),
@@ -43,7 +43,7 @@ CREATE TABLE experience
     exp_compname VARCHAR(255),
     exp_datefrom VARCHAR(255),
     exp_dateuntil VARCHAR(255),
-    exp_desc VARCHAR(255),
+    exp_desc TEXT,
     wrk_id VARCHAR(255)
 );
 
