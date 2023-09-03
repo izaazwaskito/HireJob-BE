@@ -7,6 +7,7 @@ router
   .post("/login", recruiterController.loginRecruiter)
   .get("/profile/:id", recruiterController.getSelectRecruiter)
   .get("/profile", recruiterController.getAllRecruiter)
+  .get("/verify", recruiterController.VerifyAccount)
   .put("/profile/:id", recruiterController.updateRecruiter)
   .put(
     "/profilephoto/:id",

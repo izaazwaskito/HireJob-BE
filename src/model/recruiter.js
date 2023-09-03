@@ -28,9 +28,44 @@ const createRecruiter = (data) => {
     rec_phone,
     rec_password,
     rec_confirmpasswordHash,
+    verify,
   } = data;
-  return Pool.query(`INSERT INTO recruiter(rec_id,rec_compname,rec_phone,rec_name,rec_email,rec_position,rec_password,rec_confirmpassword) 
-    VALUES ('${rec_id}','${rec_compname}','${rec_phone}','${rec_name}','${rec_email}','${rec_position}','${rec_password}','${rec_confirmpasswordHash}')`);
+  return Pool.query(`INSERT INTO recruiter(rec_id,rec_compname,rec_phone,rec_name,rec_email,rec_position,rec_password,rec_confirmpassword,verify) 
+    VALUES ('${rec_id}','${rec_compname}','${rec_phone}','${rec_name}','${rec_email}','${rec_position}','${rec_password}','${rec_confirmpasswordHash}','${verify}')`);
+};
+
+const createRecruiterVerification = (
+  recruiter_verification_id,
+  recruiter_id,
+  token
+) => {
+  return Pool.query(
+    `insert into recruiter_verification ( id , recruiter_id , token ) values ( '${recruiter_verification_id}' , '${recruiter_id}' , '${token}' )`
+  );
+};
+
+const checkRecruiterVerification = (queryUsersId, queryToken) => {
+  return Pool.query(
+    `select * from recruiter_verification where recruiter_id='${queryUsersId}' and token = '${queryToken}' `
+  );
+};
+
+const cekRecruiter = (rec_email) => {
+  return Pool.query(
+    `select verify from recruiter where rec_email = '${rec_email}' `
+  );
+};
+
+const deleteRecruiterVerification = (queryUsersId, queryToken) => {
+  return Pool.query(
+    `delete from recruiter_verification  where recruiter_id='${queryUsersId}' and token = '${queryToken}' `
+  );
+};
+
+const updateAccountVerification = (queryUsersId) => {
+  return Pool.query(
+    `update recruiter set verify='true' where rec_id='${queryUsersId}' `
+  );
 };
 
 // PUT SELECT USERS
@@ -99,6 +134,11 @@ module.exports = {
   createRecruiter,
   updateRecruiter,
   updateAvatarRecruiter,
+  createRecruiterVerification,
+  checkRecruiterVerification,
+  cekRecruiter,
+  deleteRecruiterVerification,
+  updateAccountVerification,
   findUUID,
   findEmail,
   countData,

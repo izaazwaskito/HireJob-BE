@@ -1,23 +1,19 @@
 const Pool = require("../config/db");
 
-//GET ALL WORKER
 const selectAllWorker = ({ limit, offset, sort, sortby }) => {
   return Pool.query(
     `SELECT * FROM worker ORDER BY ${sortby} ${sort} LIMIT ${limit} OFFSET ${offset}`
   );
 };
 
-//GET SELECT USERS
 const selectWorker = (wrk_id) => {
   return Pool.query(`SELECT * FROM worker WHERE wrk_id = '${wrk_id}'`);
 };
 
-//DELETE SELECT USERS
 const deleteWorker = (wrk_id) => {
   return Pool.query(`DELETE FROM worker WHERE wrk_id  = '${wrk_id}'`);
 };
 
-//POST USERS
 const createWorker = (data) => {
   const {
     wrk_id,
@@ -26,13 +22,42 @@ const createWorker = (data) => {
     wrk_phone,
     wrk_password,
     wrk_confirmpasswordHash,
+    verify,
   } = data;
-  return Pool.query(`INSERT INTO worker(wrk_id,wrk_name,wrk_email,wrk_phone,wrk_password,wrk_confirmpassword) 
-    VALUES ('${wrk_id}','${wrk_name}','${wrk_email}','${wrk_phone}','${wrk_password}',
-    '${wrk_confirmpasswordHash}')`);
+  return Pool.query(`INSERT INTO worker(wrk_id,wrk_name,wrk_email,wrk_phone,wrk_password,wrk_confirmpassword,verify) 
+    VALUES ('${wrk_id}','${wrk_name}','${wrk_email}','${wrk_phone}','${wrk_password}','${wrk_confirmpasswordHash}','${verify}')`);
 };
 
-//PUT SELECT USERS
+const createWorkerVerification = (worker_verification_id, worker_id, token) => {
+  return Pool.query(
+    `insert into worker_verification ( id , worker_id , token ) values ( '${worker_verification_id}' , '${worker_id}' , '${token}' )`
+  );
+};
+
+const checkWorkerVerification = (queryUsersId, queryToken) => {
+  return Pool.query(
+    `select * from worker_verification where worker_id='${queryUsersId}' and token = '${queryToken}' `
+  );
+};
+
+const cekWorker = (wrk_email) => {
+  return Pool.query(
+    `select verify from worker where wrk_email = '${wrk_email}' `
+  );
+};
+
+const deleteWorkerVerification = (queryUsersId, queryToken) => {
+  return Pool.query(
+    `delete from worker_verification  where worker_id='${queryUsersId}' and token = '${queryToken}' `
+  );
+};
+
+const updateAccountVerification = (queryUsersId) => {
+  return Pool.query(
+    `update worker set verify='true' where wrk_id='${queryUsersId}' `
+  );
+};
+
 const updateWorker = (data) => {
   const { wrk_id, wrk_jobdesk, wrk_dom, wrk_place, wrk_desc } = data;
   return Pool.query(
@@ -47,7 +72,6 @@ const updateAvatarWorker = (data) => {
   );
 };
 
-// const updatePasswordUsers = (data) => {
 //   const { users_id, users_email, users_password, users_confirmpasswordHash } =
 //     data;
 //   return Pool.query(
@@ -86,7 +110,6 @@ const findEmail = (wrk_email) => {
   );
 };
 
-//COUNT DATA
 const countData = () => {
   return Pool.query(`SELECT COUNT(*) FROM worker`);
 };
@@ -98,7 +121,11 @@ module.exports = {
   createWorker,
   updateWorker,
   updateAvatarWorker,
-  // updatePasswordWorker,
+  createWorkerVerification,
+  checkWorkerVerification,
+  cekWorker,
+  deleteWorkerVerification,
+  updateAccountVerification,
   findUUID,
   findEmail,
   countData,

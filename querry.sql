@@ -11,7 +11,9 @@ CREATE TABLE worker
     wrk_dom VARCHAR(255),
     wrk_place VARCHAR(255),
     wrk_desc TEXT,
-    wrk_photo VARCHAR(255)
+    wrk_photo VARCHAR(255),
+    verify text not null,
+    updated_on timestamp default CURRENT_TIMESTAMP not null
 );
 
 

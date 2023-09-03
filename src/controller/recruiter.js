@@ -5,6 +5,7 @@ const Joi = require("joi");
 const authHelper = require("../helper/auth");
 const commonHelper = require("../helper/common");
 const cloudinary = require("../middlewares/cloudinary");
+const crypto = require("crypto");
 let {
   selectAllRecruiter,
   selectRecruiter,
@@ -12,10 +13,16 @@ let {
   createRecruiter,
   updateRecruiter,
   updateAvatarRecruiter,
+  createRecruiterVerification,
+  checkRecruiterVerification,
+  cekRecruiter,
+  deleteRecruiterVerification,
+  updateAccountVerification,
   findUUID,
   findEmail,
   countData,
 } = require("../model/recruiter");
+const sendemailrecruiter = require("../middlewares/sendemailrecruiter");
 
 let recruiterController = {
   getAllRecruiter: async (req, res) => {
@@ -74,11 +81,16 @@ let recruiterController = {
       rec_password,
       rec_confirmpassword,
     } = req.body;
-    const { rowCount } = await findEmail(rec_email);
-    if (rowCount) {
-      return res.json({ message: "Email Already Taken" });
+    const checkEmail = await findEmail(rec_email);
+    try {
+      if (checkEmail.rowCount == 1) throw "Email already used";
+      // delete checkEmail.rows[0].password;
+    } catch (error) {
+      delete checkEmail.rows[0].password;
+      return commonHelper.response(res, null, 403, error);
     }
 
+    const rec_confirmpasswordHash = bcrypt.hashSync(rec_confirmpassword);
     const rec_id = uuidv4();
     // let users_photo = null;
     // if (req.file) {
@@ -95,6 +107,7 @@ let recruiterController = {
       rec_confirmpassword: Joi.ref("rec_password"),
       // users_photo: Joi.string().allow(""),
     });
+
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
     });
@@ -102,7 +115,15 @@ let recruiterController = {
       console.log(error);
       return res.send(error.details);
     }
-    const rec_confirmpasswordHash = bcrypt.hashSync(rec_confirmpassword);
+
+    const verify = "false";
+    const recruiter_verification_id = uuidv4().toLocaleLowerCase();
+    const recruiter_id = rec_id;
+    const token = crypto.randomBytes(64).toString("hex");
+    const url = `${process.env.BASE_URL}recruiter/verify?id=${recruiter_id}&token=${token}`;
+
+    await sendemailrecruiter(rec_compname, rec_email, "Verify Email", url);
+
     const data = {
       rec_id,
       rec_name,
@@ -112,12 +133,81 @@ let recruiterController = {
       rec_phone,
       rec_password,
       rec_confirmpasswordHash,
+      verify,
     };
-    createRecruiter(data)
-      .then((result) =>
-        commonHelper.response(res, result.rows, 201, "Register Success")
-      )
-      .catch((err) => res.send(err));
+
+    createRecruiter(data);
+
+    await createRecruiterVerification(
+      recruiter_verification_id,
+      recruiter_id,
+      token
+    );
+
+    commonHelper.response(
+      res,
+      null,
+      201,
+      "Sign Up Success, Please check your email for verification"
+    );
+  },
+
+  VerifyAccount: async (req, res) => {
+    try {
+      const queryUsersId = req.query.id;
+      const queryToken = req.query.token;
+
+      if (typeof queryUsersId === "string" && typeof queryToken === "string") {
+        const checkUsersVerify = await findUUID(queryUsersId);
+
+        if (checkUsersVerify.rowCount == 0) {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Error users has not found"
+          );
+        }
+
+        if (checkUsersVerify.rows[0].verify != "false") {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Users has been verified"
+          );
+        }
+
+        const result = await checkRecruiterVerification(
+          queryUsersId,
+          queryToken
+        );
+
+        if (result.rowCount == 0) {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Error invalid credential verification"
+          );
+        } else {
+          await updateAccountVerification(queryUsersId);
+          await deleteRecruiterVerification(queryUsersId, queryToken);
+          commonHelper.response(res, null, 200, "Users verified succesful");
+        }
+      } else {
+        return commonHelper.response(
+          res,
+          null,
+          403,
+          "Invalid url verification"
+        );
+      }
+    } catch (error) {
+      console.log(error);
+
+      // res.send(createError(404));
+    }
   },
 
   updateRecruiter: async (req, res) => {
@@ -199,6 +289,14 @@ let recruiterController = {
 
   loginRecruiter: async (req, res) => {
     const { rec_email, rec_confirmpassword } = req.body;
+    const {
+      rows: [verify],
+    } = await cekRecruiter(rec_email);
+    if (verify.verify === "false") {
+      return res.json({
+        message: "recruiter is unverify",
+      });
+    }
     const {
       rows: [users],
     } = await findEmail(rec_email);

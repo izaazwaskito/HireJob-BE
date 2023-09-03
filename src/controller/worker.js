@@ -5,6 +5,7 @@ const Joi = require("joi");
 const authHelper = require("../helper/auth");
 const commonHelper = require("../helper/common");
 const cloudinary = require("../middlewares/cloudinary");
+const crypto = require("crypto");
 let {
   selectAllWorker,
   selectWorker,
@@ -12,11 +13,16 @@ let {
   createWorker,
   updateWorker,
   updateAvatarWorker,
-  // updatePasswordWorker,
+  createWorkerVerification,
+  checkWorkerVerification,
+  cekWorker,
+  deleteWorkerVerification,
+  updateAccountVerification,
   findUUID,
   findEmail,
   countData,
 } = require("../model/worker");
+const sendemailworker = require("../middlewares/sendemailworker");
 
 let workerController = {
   getAllWorker: async (req, res) => {
@@ -72,24 +78,24 @@ let workerController = {
       wrk_password,
       wrk_confirmpassword,
     } = req.body;
-    const { rowCount } = await findEmail(wrk_email);
-    if (rowCount) {
-      return res.json({ message: "Email Already Taken" });
+    const checkEmail = await findEmail(wrk_email);
+    try {
+      if (checkEmail.rowCount == 1) throw "Email already used";
+      // delete checkEmail.rows[0].password;
+    } catch (error) {
+      delete checkEmail.rows[0].password;
+      return commonHelper.response(res, null, 403, error);
     }
 
+    const wrk_confirmpasswordHash = bcrypt.hashSync(wrk_confirmpassword);
     const wrk_id = uuidv4();
-    // let users_photo = null;
-    // if (req.file) {
-    //   const result = await cloudinary.uploader.upload(req.file.path);
-    //   users_photo = result.secure_url;
-    // }
+
     const schema = Joi.object().keys({
       wrk_name: Joi.required(),
       wrk_email: Joi.string().required(),
       wrk_phone: Joi.any(),
       wrk_password: Joi.string().min(3).max(15).required(),
       wrk_confirmpassword: Joi.ref("wrk_password"),
-      // users_photo: Joi.string().allow(""),
     });
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
@@ -98,7 +104,15 @@ let workerController = {
       console.log(error);
       return res.send(error.details);
     }
-    const wrk_confirmpasswordHash = bcrypt.hashSync(wrk_confirmpassword);
+
+    const verify = "false";
+    const worker_verification_id = uuidv4().toLocaleLowerCase();
+    const worker_id = wrk_id;
+    const token = crypto.randomBytes(64).toString("hex");
+    const url = `${process.env.BASE_URL}worker/verify?id=${worker_id}&token=${token}`;
+
+    await sendemailworker(wrk_name, wrk_email, "Verify Email", url);
+
     const data = {
       wrk_id,
       wrk_name,
@@ -106,12 +120,73 @@ let workerController = {
       wrk_phone,
       wrk_password,
       wrk_confirmpasswordHash,
+      verify,
     };
-    createWorker(data)
-      .then((result) =>
-        commonHelper.response(res, result.rows, 201, "Register Success")
-      )
-      .catch((err) => res.send(err));
+    createWorker(data);
+
+    await createWorkerVerification(worker_verification_id, worker_id, token);
+
+    commonHelper.response(
+      res,
+      null,
+      201,
+      "Sign Up Success, Please check your email for verification"
+    );
+  },
+
+  VerifyAccount: async (req, res) => {
+    try {
+      const queryUsersId = req.query.id;
+      const queryToken = req.query.token;
+
+      if (typeof queryUsersId === "string" && typeof queryToken === "string") {
+        const checkUsersVerify = await findUUID(queryUsersId);
+
+        if (checkUsersVerify.rowCount == 0) {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Error users has not found"
+          );
+        }
+
+        if (checkUsersVerify.rows[0].verify != "false") {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Users has been verified"
+          );
+        }
+
+        const result = await checkWorkerVerification(queryUsersId, queryToken);
+
+        if (result.rowCount == 0) {
+          return commonHelper.response(
+            res,
+            null,
+            403,
+            "Error invalid credential verification"
+          );
+        } else {
+          await updateAccountVerification(queryUsersId);
+          await deleteWorkerVerification(queryUsersId, queryToken);
+          commonHelper.response(res, null, 200, "Users verified succesful");
+        }
+      } else {
+        return commonHelper.response(
+          res,
+          null,
+          403,
+          "Invalid url verification"
+        );
+      }
+    } catch (error) {
+      console.log(error);
+
+      // res.send(createError(404));
+    }
   },
 
   updateWorker: async (req, res) => {
@@ -226,6 +301,14 @@ let workerController = {
 
   loginWorker: async (req, res) => {
     const { wrk_email, wrk_confirmpassword } = req.body;
+    const {
+      rows: [verify],
+    } = await cekWorker(wrk_email);
+    if (verify.verify === "false") {
+      return res.json({
+        message: "worker is unverify",
+      });
+    }
     const {
       rows: [users],
     } = await findEmail(wrk_email);

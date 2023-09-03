@@ -62,9 +62,9 @@ let skillController = {
 
   createSkill: async (req, res) => {
     const { skill_name, wrk_id } = req.body;
-    const { rowCount: SkillName } = await findSkill(skill_name,wrk_id);
+    const { rowCount: SkillName } = await findSkill(skill_name, wrk_id);
     // const { rowCount: WorkerID } = await findUser(wrk_id);
-    
+
     if (SkillName) {
       return res.json({ message: "Skill Already" });
     }
